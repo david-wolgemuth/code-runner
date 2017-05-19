@@ -1,0 +1,22 @@
+{
+  "name": "code-runner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently --kill-others \"npm run watchify\" \"npm run serve\"",
+    "watchify": "./node_modules/watchify/bin/cmd.js src -o dist/bundle.js",
+    "serve": "./node_modules/http-server/bin/http-server -p 3000 -o -c-1"
+  },
+  "keywords": [],
+  "author": "David Wolgemuth <davidjwolgemuth@wgmail.com> (https://david-wolgemuth.github.io)",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^3.4.0",
+    "http-server": "^0.10.0",
+    "watchify": "^3.9.0"
+  },
+  "dependencies": {
+    "codemirror": "^5.25.2"
+  }
+}
