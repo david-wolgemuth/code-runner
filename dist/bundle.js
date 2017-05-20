@@ -10573,6 +10573,8 @@ var main = function main() {
     renderNavList(problem);
     addListenersToNavbar();
     displayProblem(problem, editor);
+    tableBody.innerHTML = '';
+    messageDiv.innerHTML = '';
   };
 
   onProblemChange(updateProblem);
