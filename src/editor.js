@@ -22,4 +22,8 @@ const setupEditor = (area) => (
   })
 );
 
-module.exports = { setupEditor };
+const displayProblem = (problem, editor) => {
+  editor.setValue(problem.solutions[0]);
+};
+
+module.exports = { setupEditor, displayProblem };

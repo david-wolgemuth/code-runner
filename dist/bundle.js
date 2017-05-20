@@ -10164,31 +10164,13 @@ const setupEditor = (area) => (
   })
 );
 
-module.exports = { setupEditor };
+const displayProblem = (problem, editor) => {
+  editor.setValue(problem.solutions[0]);
+};
+
+module.exports = { setupEditor, displayProblem };
 
 },{"codemirror":1,"codemirror/mode/javascript/javascript":2}],4:[function(require,module,exports){
-module.exports={
-  "title": "Sum of Numbers",
-  "description": "Return the sum of all numbers in an array",
-  "functionName": "sum",
-  "parameters": ["numberArray"],
-  "tests":[
-    {
-      "0": [2, 4, 6],
-      "return": 12
-    },
-    {
-      "0": [1, 3],
-      "return": 4
-    },
-    {
-      "0": [9],
-      "return": 9
-    }
-  ]
-}
-  
-},{}],5:[function(require,module,exports){
 
 
 const updateSearch = (event) => {
@@ -10222,7 +10204,7 @@ const addListenersToNavbar = () => {
 
 module.exports = { addListenersToNavbar };
 
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 
 /* global PROBLEMS */
 
@@ -10279,9 +10261,44 @@ const onProblemChange = (callback) => problemChangedCallbacks.push(callback);
 module.exports = { onProblemChange, getCurrentProblem };
 
 
-},{}],7:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 
-const example = require('./example-problem');
+const renderResults = (results, tableBody) => {
+  tableBody.innerHTML = results.reduce((html, result) => (html + `
+    <tr>
+      ${console.log(result)?'':''}
+      <td>${result.message.call}</td>
+      <td>${result.message.expected}</td>
+      <td>${result.message.actual}</td>
+      <td>
+        <i class="fa ${result.success ? 'fa-circle success' : 'fa-circle-o failure' }" aria-hidden="true"></i>
+      </td>
+    </tr>
+  `), '');
+};
+
+const renderPassFail = (passed, messageDiv) => {
+  if (passed) {
+    messageDiv.innerHTML = '<i class="fa fa-check"></i> Passed!';
+    messageDiv.classList.add('success');
+    messageDiv.classList.remove('failure');
+  } else {
+    messageDiv.innerHTML = '<i class="fa fa-times"></i> Try Again.';
+    messageDiv.classList.add('failure');
+    messageDiv.classList.remove('success');
+  }
+};
+
+const renderErrorMessage = (error, messageDiv, tableBody) => {
+  tableBody.innerHTML = '';
+  messageDiv.innerText = error;
+  messageDiv.classList.add('failure');
+  messageDiv.classList.remove('success');
+};
+
+module.exports = { renderResults, renderPassFail, renderErrorMessage };
+
+},{}],7:[function(require,module,exports){
 
 const slog = (args) => {
   console.log(args);
@@ -10337,13 +10354,13 @@ const buildTest = (problem) => (
   `), '')
 );
 
-const run = (code, test=example) => (
+const run = (code, problem) => (
   function (success, failure) {
     "use strict";
     const func = new Function('success', 'assert', `
       "use strict";
       ${code}
-      ${buildTest(test)}
+      ${buildTest(problem)}
     `);
     try {
       func(success, assert);
@@ -10357,56 +10374,27 @@ const run = (code, test=example) => (
 
 module.exports = { run };
 
-},{"./example-problem":4}],8:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 
-const { setupEditor } = require('./editor');
+const { setupEditor, displayProblem } = require('./editor');
 const { run } = require('./test-runner')
 const { addListenersToNavbar } = require('./navbar');
 const { getCurrentProblem, onProblemChange } = require('./problems');
+const { renderErrorMessage, renderPassFail, renderResults } = require('./results');
 
-const renderResults = (results, tableBody) => {
-  tableBody.innerHTML = results.reduce((html, result) => (html + `
-    <tr>
-      ${console.log(result)?'':''}
-      <td>${result.message.call}</td>
-      <td>${result.message.expected}</td>
-      <td>${result.message.actual}</td>
-      <td>
-        <i class="fa ${result.success ? 'fa-circle success' : 'fa-circle-o failure' }" aria-hidden="true"></i>
-      </td>
-    </tr>
-  `), '');
-};
-
-const runTest = (event, editor, messageDiv, tableBody) => {
+const runTest = (event, editor) => {
   const results = [];
   try {
-    const passed = run(editor.getValue())(
+    const passed = run(editor.getValue(), getCurrentProblem())(
       (message) => {
-        console.log(message);
         results.push({ message: JSON.parse(message), success: true });
     }, (message) => {
         results.push({ message: JSON.parse(message), success: false });
     });
-    if (passed) {
-      messageDiv.innerHTML = '<i class="fa fa-check"></i> Passed!';
-      messageDiv.classList.add('success');
-      messageDiv.classList.remove('failure');
-    } else {
-      messageDiv.innerHTML = '<i class="fa fa-times"></i> Try Again.';
-      messageDiv.classList.add('failure');
-      messageDiv.classList.remove('success');
-    }
-    renderResults(results, tableBody);
+    return { results, passed };
   } catch (error) {
-    tableBody.innerHTML = '';
-    messageDiv.innerText = error;
-    messageDiv.classList.add('failure');
+    return { error };
   }
-};
-
-const displayProblem = (problem, editor) => {
-  editor.setValue(problem.solutions[0]);
 };
 
 const main = () => {
@@ -10419,7 +10407,13 @@ const main = () => {
   const runButton = document.getElementById('run');
 
   const _runTest = (event) => {
-    runTest(event, editor, messageDiv, tableBody);
+    const { results, passed, error } = runTest(event, editor);
+    if (error) {
+      renderErrorMessage(error, messageDiv, tableBody);
+    } else {
+      renderPassFail(passed, messageDiv);
+      renderResults(results, tableBody);
+    }
   };
 
   const runTestIfCTREnter = (event) => {
@@ -10439,4 +10433,4 @@ const main = () => {
 
 document.addEventListener('DOMContentLoaded', main);
 
-},{"./editor":3,"./navbar":5,"./problems":6,"./test-runner":7}]},{},[8]);
+},{"./editor":3,"./navbar":4,"./problems":5,"./results":6,"./test-runner":7}]},{},[8]);

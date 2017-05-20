@@ -1,6 +1,4 @@
 
-const example = require('./example-problem');
-
 const slog = (args) => {
   console.log(args);
   return '';
@@ -55,13 +53,13 @@ const buildTest = (problem) => (
   `), '')
 );
 
-const run = (code, test=example) => (
+const run = (code, problem) => (
   function (success, failure) {
     "use strict";
     const func = new Function('success', 'assert', `
       "use strict";
       ${code}
-      ${buildTest(test)}
+      ${buildTest(problem)}
     `);
     try {
       func(success, assert);

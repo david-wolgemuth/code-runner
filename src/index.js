@@ -1,52 +1,23 @@
 
-const { setupEditor } = require('./editor');
+const { setupEditor, displayProblem } = require('./editor');
 const { run } = require('./test-runner')
 const { addListenersToNavbar } = require('./navbar');
 const { getCurrentProblem, onProblemChange } = require('./problems');
+const { renderErrorMessage, renderPassFail, renderResults } = require('./results');
 
-const renderResults = (results, tableBody) => {
-  tableBody.innerHTML = results.reduce((html, result) => (html + `
-    <tr>
-      ${console.log(result)?'':''}
-      <td>${result.message.call}</td>
-      <td>${result.message.expected}</td>
-      <td>${result.message.actual}</td>
-      <td>
-        <i class="fa ${result.success ? 'fa-circle success' : 'fa-circle-o failure' }" aria-hidden="true"></i>
-      </td>
-    </tr>
-  `), '');
-};
-
-const runTest = (event, editor, messageDiv, tableBody) => {
+const runTest = (event, editor) => {
   const results = [];
   try {
-    const passed = run(editor.getValue())(
+    const passed = run(editor.getValue(), getCurrentProblem())(
       (message) => {
-        console.log(message);
         results.push({ message: JSON.parse(message), success: true });
     }, (message) => {
         results.push({ message: JSON.parse(message), success: false });
     });
-    if (passed) {
-      messageDiv.innerHTML = '<i class="fa fa-check"></i> Passed!';
-      messageDiv.classList.add('success');
-      messageDiv.classList.remove('failure');
-    } else {
-      messageDiv.innerHTML = '<i class="fa fa-times"></i> Try Again.';
-      messageDiv.classList.add('failure');
-      messageDiv.classList.remove('success');
-    }
-    renderResults(results, tableBody);
+    return { results, passed };
   } catch (error) {
-    tableBody.innerHTML = '';
-    messageDiv.innerText = error;
-    messageDiv.classList.add('failure');
+    return { error };
   }
-};
-
-const displayProblem = (problem, editor) => {
-  editor.setValue(problem.solutions[0]);
 };
 
 const main = () => {
@@ -59,7 +30,13 @@ const main = () => {
   const runButton = document.getElementById('run');
 
   const _runTest = (event) => {
-    runTest(event, editor, messageDiv, tableBody);
+    const { results, passed, error } = runTest(event, editor);
+    if (error) {
+      renderErrorMessage(error, messageDiv, tableBody);
+    } else {
+      renderPassFail(passed, messageDiv);
+      renderResults(results, tableBody);
+    }
   };
 
   const runTestIfCTREnter = (event) => {
