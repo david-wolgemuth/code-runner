@@ -4,6 +4,7 @@ const { run } = require('./test-runner')
 const { addListenersToNavbar, renderNavList } = require('./navbar');
 const { getCurrentProblem, onProblemChange } = require('./problems');
 const { renderErrorMessage, renderPassFail, renderResults } = require('./results');
+const { setProblemToSolved } = require('./solved');
 
 const main = () => {
   const area = document.getElementById('code-editor');
@@ -13,7 +14,11 @@ const main = () => {
   const runButton = document.getElementById('run');
 
   const onRun = (event) => {
-    const { results, passed, error } = run(editor.getValue(), getCurrentProblem());
+    const problem = getCurrentProblem();
+    const { results, passed, error } = run(editor.getValue(), problem);
+    if (passed) {
+      setProblemToSolved(problem.functionName);
+    }
     if (error) {
       renderErrorMessage(error, messageDiv, tableBody);
     } else {

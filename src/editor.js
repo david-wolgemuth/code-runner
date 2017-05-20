@@ -14,6 +14,9 @@ const setupEditor = (area) => (
 );
 
 const displayProblem = (problem, editor) => {
+  // const solutionsListDiv = document.getElementById('solutions-list');
+  // const solved = window.localStorage.get('solvedProblems');
+
   if (problem) {
     editor.setValue(problem.solutions[0]);
   }

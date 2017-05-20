@@ -52,7 +52,8 @@ const buildTest = (problem) => (
 
       success(successMessage);
     })();
-  `), '')
+  `
+  ), '')
 );
 
 const assert = (x, y, functionName, input) => {
@@ -61,13 +62,24 @@ const assert = (x, y, functionName, input) => {
       "call": "${functionName}(${
         prettyArgsString(input)
       })",
-      "expected": "${x.toString().replace(/\"/g, "\\\"")}",
-      "actual": "${y.toString().replace(/\"/g, "\\\"")}"
+      "expected": ${safeJSONSymbol(x)},
+      "actual": ${safeJSONSymbol(y)}
     }
   `;
-
   if (x === y) { return message; }
   throw new Error(message);
+};
+
+const safeJSONSymbol = (input) => {
+  for (let bad of [null, undefined]) {
+    if (input === bad) {
+      return input;
+    }
+  }
+  if (typeof input === 'number') {
+    return input;
+  }
+  return `"${input.toString().replace(/\"/g, "\\\"")}"`;
 };
 
 const argsToArrayString = (args) => {

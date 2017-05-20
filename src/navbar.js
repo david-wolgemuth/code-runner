@@ -1,8 +1,11 @@
 /* global PROBLEMS */
 
+const { getSolvedProblems } = require('./solved');
+
 const renderNavList = (currentProblem) => {
   const list = document.querySelectorAll('nav > ol')[0];
-  const listHtml = PROBLEMS.reduce((html, group) => (html + renderProblemGroup(group, currentProblem)), '')
+  const solvedProblems = getSolvedProblems();
+  const listHtml = PROBLEMS.reduce((html, group) => (html + renderProblemGroup(group, currentProblem, solvedProblems)), '');
   list.innerHTML = listHtml;
 };
 
@@ -20,18 +23,39 @@ module.exports = { addListenersToNavbar, renderNavList };
 /*------------  PRIVATE  ------------*/
 
 
-const renderProblemGroup = (group, currentProblem) => `
-    <li>${group.group}
-      <ul>
-        ${group.problems.reduce((html, problem) => html + renderProblem(group.group, problem, currentProblem), '')}
+const renderProblemGroup = (group, currentProblem, solvedProblems) => `
+  <li>${group.group}
+    <ul>
+        ${
+          group.problems.reduce(
+            (html, problem) => (
+                html +
+                  renderProblem(
+                    group.group,
+                    problem,
+                    currentProblem,
+                    Boolean(solvedProblems[problem.functionName])
+                  )
+            ), '')
+        }
       </ul>
     </li>
 `;
 
-const renderProblem = (group, problem, currentProblem) => `<li class="${(currentProblem && currentProblem.functionName === problem.functionName) ? 'active' : ''}">
-  <i class="fa fa-circle success"></i>
+const renderProblem = (group, problem, currentProblem, solved) => `<li
+    class="
+      ${isSameProblem(problem, currentProblem) ? 'active' : ''}
+      ${solved ? 'success' : 'failure' }
+      ">
+  <i class="fa 
+    ${solved ? 'fa-circle' : 'fa-circle-o' }
+  "></i>
   <a href="/?problem=${problem.functionName}&group=${group}">${problem.functionName}</a>
 </li>`;
+
+const isSameProblem = (a, b) => (
+  (a && b && a.functionName === b.functionName)
+);
 
 const updateSearch = (event) => {
   if (event.target.tagName !== 'A') {

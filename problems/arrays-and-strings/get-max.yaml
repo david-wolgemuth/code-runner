@@ -8,8 +8,10 @@ tests:
     return: 6
   - 0: [3, 1]
     return: 3
-  - 0: [9]
-    return: 9
+  - 0: [-3, -1]
+    return: -1
   - 0: []
     return: null
+  - 0: [9]
+    return: 9
   

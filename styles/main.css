@@ -20,6 +20,7 @@ nav {
   display: inline-block;
   vertical-align: top;
   width: 20%;
+  margin-right: 2%;
 }
 nav.closed {
   display: block;

@@ -10157,6 +10157,9 @@ var setupEditor = function setupEditor(area) {
 };
 
 var displayProblem = function displayProblem(problem, editor) {
+  // const solutionsListDiv = document.getElementById('solutions-list');
+  // const solved = window.localStorage.get('solvedProblems');
+
   if (problem) {
     editor.setValue(problem.solutions[0]);
   }
@@ -10179,10 +10182,14 @@ var setTabs = function setTabs(cm) {
 
 /* global PROBLEMS */
 
+var _require = require('./solved'),
+    getSolvedProblems = _require.getSolvedProblems;
+
 var renderNavList = function renderNavList(currentProblem) {
   var list = document.querySelectorAll('nav > ol')[0];
+  var solvedProblems = getSolvedProblems();
   var listHtml = PROBLEMS.reduce(function (html, group) {
-    return html + renderProblemGroup(group, currentProblem);
+    return html + renderProblemGroup(group, currentProblem, solvedProblems);
   }, '');
   list.innerHTML = listHtml;
 };
@@ -10200,14 +10207,18 @@ module.exports = { addListenersToNavbar: addListenersToNavbar, renderNavList: re
 
 /*------------  PRIVATE  ------------*/
 
-var renderProblemGroup = function renderProblemGroup(group, currentProblem) {
-  return '\n    <li>' + group.group + '\n      <ul>\n        ' + group.problems.reduce(function (html, problem) {
-    return html + renderProblem(group.group, problem, currentProblem);
+var renderProblemGroup = function renderProblemGroup(group, currentProblem, solvedProblems) {
+  return '\n  <li>' + group.group + '\n    <ul>\n        ' + group.problems.reduce(function (html, problem) {
+    return html + renderProblem(group.group, problem, currentProblem, Boolean(solvedProblems[problem.functionName]));
   }, '') + '\n      </ul>\n    </li>\n';
 };
 
-var renderProblem = function renderProblem(group, problem, currentProblem) {
-  return '<li class="' + (currentProblem && currentProblem.functionName === problem.functionName ? 'active' : '') + '">\n  <i class="fa fa-circle success"></i>\n  <a href="/?problem=' + problem.functionName + '&group=' + group + '">' + problem.functionName + '</a>\n</li>';
+var renderProblem = function renderProblem(group, problem, currentProblem, solved) {
+  return '<li\n    class="\n      ' + (isSameProblem(problem, currentProblem) ? 'active' : '') + '\n      ' + (solved ? 'success' : 'failure') + '\n      ">\n  <i class="fa \n    ' + (solved ? 'fa-circle' : 'fa-circle-o') + '\n  "></i>\n  <a href="/?problem=' + problem.functionName + '&group=' + group + '">' + problem.functionName + '</a>\n</li>';
+};
+
+var isSameProblem = function isSameProblem(a, b) {
+  return a && b && a.functionName === b.functionName;
 };
 
 var updateSearch = function updateSearch(event) {
@@ -10235,7 +10246,7 @@ var toggle = function toggle(event, nav, main) {
   main.classList.toggle('nav-open');
 };
 
-},{}],5:[function(require,module,exports){
+},{"./solved":7}],5:[function(require,module,exports){
 'use strict';
 
 /* global PROBLEMS */
@@ -10317,6 +10328,28 @@ module.exports = { renderResults: renderResults, renderPassFail: renderPassFail,
 },{}],7:[function(require,module,exports){
 'use strict';
 
+var getSolvedProblems = function getSolvedProblems() {
+  var problems = window.localStorage.getItem(SOLVED_PROBLEMS);
+  if (!problems) {
+    problems = {};
+    window.localStorage.setItem(SOLVED_PROBLEMS, JSON.stringify(problems));
+  }
+  return JSON.parse(problems);
+};
+
+var setProblemToSolved = function setProblemToSolved(problem) {
+  var problems = getSolvedProblems();
+  problems[problem] = true;
+  window.localStorage.setItem(SOLVED_PROBLEMS, JSON.stringify(problems));
+};
+
+module.exports = { setProblemToSolved: setProblemToSolved, getSolvedProblems: getSolvedProblems };
+
+var SOLVED_PROBLEMS = 'SOLVED_PROBLEMS';
+
+},{}],8:[function(require,module,exports){
+'use strict';
+
 var run = function run(code, problem) {
   var results = [];
   try {
@@ -10357,12 +10390,26 @@ var buildTest = function buildTest(problem) {
 };
 
 var assert = function assert(x, y, functionName, input) {
-  var message = '\n    {\n      "call": "' + functionName + '(' + prettyArgsString(input) + ')",\n      "expected": "' + x.toString().replace(/\"/g, "\\\"") + '",\n      "actual": "' + y.toString().replace(/\"/g, "\\\"") + '"\n    }\n  ';
-
+  var message = '\n    {\n      "call": "' + functionName + '(' + prettyArgsString(input) + ')",\n      "expected": ' + safeJSONSymbol(x) + ',\n      "actual": ' + safeJSONSymbol(y) + '\n    }\n  ';
   if (x === y) {
     return message;
   }
   throw new Error(message);
+};
+
+var safeJSONSymbol = function safeJSONSymbol(input) {
+  var _arr = [null, undefined];
+
+  for (var _i = 0; _i < _arr.length; _i++) {
+    var bad = _arr[_i];
+    if (input === bad) {
+      return input;
+    }
+  }
+  if (typeof input === 'number') {
+    return input;
+  }
+  return '"' + input.toString().replace(/\"/g, "\\\"") + '"';
 };
 
 var argsToArrayString = function argsToArrayString(args) {
@@ -10387,7 +10434,7 @@ var prettyArgsString = function prettyArgsString(args) {
   return array.join(', ');
 };
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 
 var _require = require('./editor'),
@@ -10410,6 +10457,9 @@ var _require5 = require('./results'),
     renderPassFail = _require5.renderPassFail,
     renderResults = _require5.renderResults;
 
+var _require6 = require('./solved'),
+    setProblemToSolved = _require6.setProblemToSolved;
+
 var main = function main() {
   var area = document.getElementById('code-editor');
   var editor = setupEditor(area);
@@ -10418,11 +10468,16 @@ var main = function main() {
   var runButton = document.getElementById('run');
 
   var onRun = function onRun(event) {
-    var _run = run(editor.getValue(), getCurrentProblem()),
+    var problem = getCurrentProblem();
+
+    var _run = run(editor.getValue(), problem),
         results = _run.results,
         passed = _run.passed,
         error = _run.error;
 
+    if (passed) {
+      setProblemToSolved(problem.functionName);
+    }
     if (error) {
       renderErrorMessage(error, messageDiv, tableBody);
     } else {
@@ -10452,4 +10507,4 @@ var main = function main() {
 
 document.addEventListener('DOMContentLoaded', main);
 
-},{"./editor":3,"./navbar":4,"./problems":5,"./results":6,"./test-runner":7}]},{},[8]);
+},{"./editor":3,"./navbar":4,"./problems":5,"./results":6,"./solved":7,"./test-runner":8}]},{},[9]);
