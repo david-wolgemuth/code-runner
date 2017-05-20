@@ -2,6 +2,7 @@
 const { setupEditor } = require('./editor');
 const { run } = require('./test-runner')
 const { addListenersToNavbar } = require('./navbar');
+const { getCurrentProblem, onProblemChange } = require('./problems');
 
 const renderResults = (results, tableBody) => {
   tableBody.innerHTML = results.reduce((html, result) => (html + `
@@ -44,6 +45,9 @@ const runTest = (event, editor, messageDiv, tableBody) => {
   }
 };
 
+const displayProblem = (problem, editor) => {
+  editor.setValue(problem.solutions[0]);
+};
 
 const main = () => {
   const area = document.getElementById('code-editor');
@@ -63,7 +67,10 @@ const main = () => {
       _runTest(event);
     }
   };
-  
+
+  displayProblem(getCurrentProblem(), editor);
+  onProblemChange(problem => displayProblem(problem, editor));
+
   document.addEventListener('keyup', runTestIfCTREnter);
   runButton.addEventListener('click', _runTest);
 

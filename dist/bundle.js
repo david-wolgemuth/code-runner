@@ -10191,6 +10191,23 @@ module.exports={
 },{}],5:[function(require,module,exports){
 
 
+const updateSearch = (event) => {
+  if (event.target.tagName !== 'A') {
+    return;
+  }
+  event.preventDefault();
+
+  let url = new URL(window.location);
+  let params = new URLSearchParams(url.search.slice(1));
+
+  const problem = event.target.innerText;
+
+  if (params.get('problem') !== problem) {
+    params.set('problem', problem);
+    window.history.pushState({ problem }, problem, `/?${params}`);
+  }
+};
+
 const toggle = (event, nav, main) => {
   nav.classList.toggle('closed');
   main.classList.toggle('nav-open');
@@ -10198,6 +10215,7 @@ const toggle = (event, nav, main) => {
 
 const addListenersToNavbar = () => {
   const nav = document.getElementsByTagName('nav')[0];
+  nav.addEventListener('click', updateSearch);
   const main = document.getElementById('main');
   nav.getElementsByTagName('button')[0].addEventListener('click', e=>toggle(e, nav, main));
 };
@@ -10205,6 +10223,63 @@ const addListenersToNavbar = () => {
 module.exports = { addListenersToNavbar };
 
 },{}],6:[function(require,module,exports){
+
+/* global PROBLEMS */
+
+const deepFreeze = (obj) => {
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
+  // Retrieve the property names defined on obj
+  var propNames = Object.getOwnPropertyNames(obj);
+
+  // Freeze properties before freezing self
+  propNames.forEach(function(name) {
+    var prop = obj[name];
+
+    // Freeze prop if it is an object
+    if (typeof prop == 'object' && prop !== null)
+      deepFreeze(prop);
+  });
+
+  // Freeze self (no-op if already frozen)
+  return Object.freeze(obj);
+};
+
+deepFreeze(PROBLEMS);
+
+const getCurrentProblem = () => {
+  const url = new URL(window.location);
+  const params = new URLSearchParams(url.search.slice(1));
+  const functionName = params.get('problem');
+  return PROBLEMS.find(problem => problem.functionName === functionName) || null;
+};
+
+(function createOnPushStateHandler (history){
+    // http://stackoverflow.com/questions/4570093/how-to-get-notified-about-changes-of-the-history-via-history-pushstate
+    var pushState = history.pushState;
+    history.pushState = function (state) {
+      let x = pushState.apply(history, arguments);
+      if (typeof history.onpushstate === "function") {
+        history.onpushstate({ state });
+      }
+      return x;
+    };
+})(window.history);
+
+const problemChangedCallbacks = [];
+const onParamsChange = () => {
+  const problem = getCurrentProblem();
+  problemChangedCallbacks.forEach(callback => callback(problem));
+};
+
+window.onpopstate = onParamsChange;
+window.history.onpushstate = onParamsChange;
+
+const onProblemChange = (callback) => problemChangedCallbacks.push(callback);
+
+module.exports = { onProblemChange, getCurrentProblem };
+
+
+},{}],7:[function(require,module,exports){
 
 const example = require('./example-problem');
 
@@ -10282,11 +10357,12 @@ const run = (code, test=example) => (
 
 module.exports = { run };
 
-},{"./example-problem":4}],7:[function(require,module,exports){
+},{"./example-problem":4}],8:[function(require,module,exports){
 
 const { setupEditor } = require('./editor');
 const { run } = require('./test-runner')
 const { addListenersToNavbar } = require('./navbar');
+const { getCurrentProblem, onProblemChange } = require('./problems');
 
 const renderResults = (results, tableBody) => {
   tableBody.innerHTML = results.reduce((html, result) => (html + `
@@ -10329,6 +10405,9 @@ const runTest = (event, editor, messageDiv, tableBody) => {
   }
 };
 
+const displayProblem = (problem, editor) => {
+  editor.setValue(problem.solutions[0]);
+};
 
 const main = () => {
   const area = document.getElementById('code-editor');
@@ -10348,7 +10427,10 @@ const main = () => {
       _runTest(event);
     }
   };
-  
+
+  displayProblem(getCurrentProblem(), editor);
+  onProblemChange(problem => displayProblem(problem, editor));
+
   document.addEventListener('keyup', runTestIfCTREnter);
   runButton.addEventListener('click', _runTest);
 
@@ -10357,4 +10439,4 @@ const main = () => {
 
 document.addEventListener('DOMContentLoaded', main);
 
-},{"./editor":3,"./navbar":5,"./test-runner":6}]},{},[7]);
+},{"./editor":3,"./navbar":5,"./problems":6,"./test-runner":7}]},{},[8]);
