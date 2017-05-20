@@ -13,7 +13,7 @@ const setTabs = (cm) => {
 
 const setupEditor = (area) => (
   CodeMirror(area, {
-    value: 'function myScript(){\n  return 100;\n}\n',
+    value: 'const sum = (arr) => (\n  arr.reduce((s, x) => s + x)\n);\n',
     mode:  'javascript',
     tabSize: 2,
     extraKeys: { Tab: setTabs },

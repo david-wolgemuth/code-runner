@@ -3,23 +3,147 @@
 	<head>
 		<title>Code Runner</title>
 		<script type="text/javascript" src="/dist/bundle.js"></script>
+    <link rel="stylesheet" type="text/css" href="/styles/sakura.css">
+		<script src="https://use.fontawesome.com/c580d027b1.js"></script>
 		<link rel="stylesheet" type="text/css" href="/node_modules/codemirror/lib/codemirror.css">
 		<style type="text/css" media="screen">
+			body {
+				max-width: 48em;
+			}
+			h1 {
+				text-align: center;
+			}
 			#code-editor {
 				outline: 1px solid gray;
 			}
 			#run {
 				font-size: 24px;
-				background: white;
+			}
+			.success {
+				color: #2c8898;
+			}
+			.failure {
+				color: #982c61;
+			}
+			nav {
+				display: inline-block;
+				vertical-align: top;
+				width: 20%;
+			}
+			nav.closed {
+				display: block;
+				margin: 16px;
+			}
+			nav.closed > ol {
+				display: none;
+			}
+			ol, ul {
+				padding-left: 0px;
+			}
+			ul {
+				list-style: none;
+			}
+			#main {
+				display: block;
+				width: 100%;
+			}
+			#main.nav-open {
+				display: inline-block;
+				width: 75%;
+			}
+			.tooltip {
+				position: relative;
+				/*display: inline-block;
+				border-bottom: 1px dotted black;*/
+			}
+
+			.tooltip .tooltiptext {
+        font-size: 16px;
+				visibility: hidden;
+				background-color: black;
+				color: #fff;
+				opacity: 0.7;
+				text-align: center;
+				border-radius: 6px;
+				padding: 6px;
+
+				/* Position the tooltip */
+				position: absolute;
+				left: 20px;
+				top: 20px;
+				z-index: 1;
+			}
+
+			.tooltip:hover .tooltiptext {
+				visibility: visible;
 			}
 		</style>
 	</head>
 	<body>
+		<div id="wrapper">
+			<h1>
+				Learn JavaScript
+			</h1>
+			<hr /><br />
+			<nav>
+				<button>Toggle List</button>
+				<ol>
+					<li>
+						Arrays
+						<ul>
+							<li><i class="fa fa-circle success"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle success"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle success"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle success"></i> <a href>mergeSort</a></li>
+						</ul>
+					</li>
+					<li>
+						Arrays
+						<ul>
+							<li><i class="fa fa-circle success"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle success"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle-o"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle-o"></i> <a href>mergeSort</a></li>
+						</ul>
+					</li>
+					<li>
+						Arrays
+						<ul>
+							<li><i class="fa fa-circle-o"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle-o"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle-o"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle-o"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle-o"></i> <a href>mergeSort</a></li>
+							<li><i class="fa fa-circle-o"></i> <a href>mergeSort</a></li>
+						</ul>
+					</li>
 
-	<div>
-		<button id="run">&#9654;</button>
-	</div>
-	<div id="code-editor"></div>
-		
+				</ol>
+			</nav>
+			<div id="main" class="nav-open">
+				<div id="code-editor"></div>
+				<div>
+					<h3>
+						<button id="run" class="tooltip">
+							Run Code
+							&#9654;
+							<span class="tooltiptext">Also run with "ctrl-enter"</span>
+						</button>
+						<span id="message"></span>
+					</h3>
+				</div>
+				<table id="test-results">
+					<thead>
+						<th>Call</th>
+						<th>Expected</th>
+						<th>Actual</th>
+						<th></th>
+					</thead>
+					<tbody>
+
+					</tbody>
+				</table>
+			</div>
+		</div>
 	</body>
 </html>

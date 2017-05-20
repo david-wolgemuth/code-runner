@@ -10155,7 +10155,7 @@ const setTabs = (cm) => {
 
 const setupEditor = (area) => (
   CodeMirror(area, {
-    value: 'function myScript(){\n  return 100;\n}\n',
+    value: 'const sum = (arr) => (\n  arr.reduce((s, x) => s + x)\n);\n',
     mode:  'javascript',
     tabSize: 2,
     extraKeys: { Tab: setTabs },
@@ -10167,14 +10167,194 @@ const setupEditor = (area) => (
 module.exports = { setupEditor };
 
 },{"codemirror":1,"codemirror/mode/javascript/javascript":2}],4:[function(require,module,exports){
+module.exports={
+  "title": "Sum of Numbers",
+  "description": "Return the sum of all numbers in an array",
+  "functionName": "sum",
+  "parameters": ["numberArray"],
+  "tests":[
+    {
+      "0": [2, 4, 6],
+      "return": 12
+    },
+    {
+      "0": [1, 3],
+      "return": 4
+    },
+    {
+      "0": [9],
+      "return": 9
+    }
+  ]
+}
+  
+},{}],5:[function(require,module,exports){
+
+
+const toggle = (event, nav, main) => {
+  nav.classList.toggle('closed');
+  main.classList.toggle('nav-open');
+};
+
+const addListenersToNavbar = () => {
+  const nav = document.getElementsByTagName('nav')[0];
+  const main = document.getElementById('main');
+  nav.getElementsByTagName('button')[0].addEventListener('click', e=>toggle(e, nav, main));
+};
+
+module.exports = { addListenersToNavbar };
+
+},{}],6:[function(require,module,exports){
+
+const example = require('./example-problem');
+
+const slog = (args) => {
+  console.log(args);
+  return '';
+}
+const argsToArrayString = (args) => {
+  const array = [];
+  for (let key in args) {
+    if (key == +key) {  // is index
+      array[key] = args[key];
+    }
+  }
+  return JSON.stringify(array);
+};
+const prettyArgsString = (args) => {
+  const array = [];
+  for (let key in args) {
+    if (key == +key) {  // is index
+      array[key] = JSON.stringify(args[key]).replace(/\"/g, "\\\"");
+    }
+  }
+  return array.join(', ');
+}
+
+const assert = (x, y, functionName, input) => {
+  const message = `
+    {
+      "call": "${functionName}(${
+        prettyArgsString(input)
+      })",
+      "expected": "${x.toString().replace(/\"/g, "\\\"")}",
+      "actual": "${y.toString().replace(/\"/g, "\\\"")}"
+    }
+  `;
+
+  if (x === y) { return message; }
+  throw new Error(message);
+};
+
+const buildTest = (problem) => (
+  problem.tests.reduce((str, test) => (
+    str + `(function () {
+      "use strict;"
+      let successMessage = assert(
+        ${problem.functionName}.apply(null, ${argsToArrayString(test)}),
+        ${test.return},
+        '${problem.functionName}',
+        ${argsToArrayString(test)},
+      );
+
+      success(successMessage);
+    })();
+  `), '')
+);
+
+const run = (code, test=example) => (
+  function (success, failure) {
+    "use strict";
+    const func = new Function('success', 'assert', `
+      "use strict";
+      ${code}
+      ${buildTest(test)}
+    `);
+    try {
+      func(success, assert);
+    } catch (error) {
+      failure(error.message);
+      return false;
+    }
+    return true;
+  }
+);
+
+module.exports = { run };
+
+},{"./example-problem":4}],7:[function(require,module,exports){
 
 const { setupEditor } = require('./editor');
+const { run } = require('./test-runner')
+const { addListenersToNavbar } = require('./navbar');
 
-const main = ( ) => {
+const renderResults = (results, tableBody) => {
+  tableBody.innerHTML = results.reduce((html, result) => (html + `
+    <tr>
+      ${console.log(result)?'':''}
+      <td>${result.message.call}</td>
+      <td>${result.message.expected}</td>
+      <td>${result.message.actual}</td>
+      <td>
+        <i class="fa ${result.success ? 'fa-circle success' : 'fa-circle-o failure' }" aria-hidden="true"></i>
+      </td>
+    </tr>
+  `), '');
+};
+
+const runTest = (event, editor, messageDiv, tableBody) => {
+  const results = [];
+  try {
+    const passed = run(editor.getValue())(
+      (message) => {
+        console.log(message);
+        results.push({ message: JSON.parse(message), success: true });
+    }, (message) => {
+        results.push({ message: JSON.parse(message), success: false });
+    });
+    if (passed) {
+      messageDiv.innerHTML = '<i class="fa fa-check"></i> Passed!';
+      messageDiv.classList.add('success');
+      messageDiv.classList.remove('failure');
+    } else {
+      messageDiv.innerHTML = '<i class="fa fa-times"></i> Try Again.';
+      messageDiv.classList.add('failure');
+      messageDiv.classList.remove('success');
+    }
+    renderResults(results, tableBody);
+  } catch (error) {
+    tableBody.innerHTML = '';
+    messageDiv.innerText = error;
+    messageDiv.classList.add('failure');
+  }
+};
+
+
+const main = () => {
   const area = document.getElementById('code-editor');
-  setupEditor(area);
+  const editor = setupEditor(area);
+
+  const messageDiv = document.getElementById('message');
+  const tableBody = document.getElementById('test-results').getElementsByTagName('tbody')[0];
+
+  const runButton = document.getElementById('run');
+
+  const _runTest = (event) => {
+    runTest(event, editor, messageDiv, tableBody);
+  };
+
+  const runTestIfCTREnter = (event) => {
+    if (event.key === 'Enter' && event.ctrlKey) {
+      _runTest(event);
+    }
+  };
+  
+  document.addEventListener('keyup', runTestIfCTREnter);
+  runButton.addEventListener('click', _runTest);
+
+  addListenersToNavbar();
 };
 
 document.addEventListener('DOMContentLoaded', main);
 
-},{"./editor":3}]},{},[4]);
+},{"./editor":3,"./navbar":5,"./test-runner":6}]},{},[7]);
