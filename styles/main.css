@@ -39,7 +39,7 @@ nav ul > li {
   padding: 4px 8px;
   border-radius: 6px;
 }
-nav li.active, nav li.active * {
+li.active, li.active * {
   background: #2c8898;
   color: #fff;
 }
@@ -51,12 +51,19 @@ nav li.active, nav li.active * {
   display: inline-block;
   width: 75%;
 }
+
+#solutions-list ul li {
+  border: 2px solid #2c8898;
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: inline-block;
+}
+
 .tooltip {
   position: relative;
   /*display: inline-block;
   border-bottom: 1px dotted black;*/
 }
-
 .tooltip .tooltiptext {
   font-size: 16px;
   visibility: hidden;

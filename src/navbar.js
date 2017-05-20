@@ -10,8 +10,10 @@ const renderNavList = (currentProblem) => {
 };
 
 const addListenersToNavbar = () => {
+  const solutionsList = document.getElementById('solutions-list');
   const nav = document.getElementsByTagName('nav')[0];
   nav.addEventListener('click', updateSearch);
+  solutionsList.addEventListener('click', updateSearch);
   const main = document.getElementById('main');
   nav.getElementsByTagName('button')[0].addEventListener('click', e=>toggle(e, nav, main));
 };
@@ -72,8 +74,17 @@ const updateSearch = (event) => {
 
   let problem = destParams.get('problem');
   let group = destParams.get('group');
-  params.set('problem', problem);
-  params.set('group', group);
+  let solution = destParams.get('solution');
+  if (problem) {
+    params.set('problem', problem);
+  }
+  if (group) {
+    params.set('group', group);
+  }
+  if (solution) {
+    params.set('solution', solution);
+  }
+
   window.history.pushState({ problem, group }, problem, `/?${params}`);
 };
 

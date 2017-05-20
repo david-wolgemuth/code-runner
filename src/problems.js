@@ -1,6 +1,8 @@
 
 /* global PROBLEMS */
 
+const { getSolvedProblems } = require('./solved');
+
 const getCurrentProblem = () => {
   const url = new URL(window.location);
   const params = new URLSearchParams(url.search.slice(1));
@@ -12,10 +14,34 @@ const getCurrentProblem = () => {
     : null;
 };
 
+const getCurrentSolution = () => {
+  const problem = getCurrentProblem();
+  if (!problem) {
+    return null;
+  }
+
+  const url = new URL(window.location);
+  const params = new URLSearchParams(url.search.slice(1));
+  const solution = parseInt(params.get('solution'));
+
+  if (solution === -1) {
+    let solved = getSolvedProblems();
+    return solved[problem.functionName];
+  }
+
+  return problem.solutions[solution] || null;
+};
+
 const onProblemChange = (callback) => problemChangedCallbacks.push(callback);
 
+const getProblemSignature = (problem, arrow) => (
+  arrow ?
+    `const ${problem.functionName} = (${problem.parameters.join(', ')})`
+    :
+    `function ${problem.functionName} (${problem.parameters.join(', ')})`
+);
 
-module.exports = { onProblemChange, getCurrentProblem };
+module.exports = { onProblemChange, getCurrentProblem, getProblemSignature, getCurrentSolution };
 
 
 /*------------  PRIVATE  ------------*/

@@ -15,9 +15,10 @@ const main = () => {
 
   const onRun = (event) => {
     const problem = getCurrentProblem();
-    const { results, passed, error } = run(editor.getValue(), problem);
+    const code = editor.getValue();
+    const { results, passed, error } = run(code, problem);
     if (passed) {
-      setProblemToSolved(problem.functionName);
+      setProblemToSolved(problem.functionName, code);
     }
     if (error) {
       renderErrorMessage(error, messageDiv, tableBody);

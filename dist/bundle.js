@@ -10145,6 +10145,13 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
 var CodeMirror = require('codemirror');
 require('codemirror/mode/javascript/javascript');
 
+var _require = require('./solved'),
+    getSolvedProblems = _require.getSolvedProblems;
+
+var _require2 = require('./problems'),
+    getCurrentSolution = _require2.getCurrentSolution,
+    getProblemSignature = _require2.getProblemSignature;
+
 var setupEditor = function setupEditor(area) {
   return CodeMirror(area, {
     value: '/* Select a problem */',
@@ -10157,17 +10164,42 @@ var setupEditor = function setupEditor(area) {
 };
 
 var displayProblem = function displayProblem(problem, editor) {
-  // const solutionsListDiv = document.getElementById('solutions-list');
-  // const solved = window.localStorage.get('solvedProblems');
+  var problemInfoDiv = document.getElementById('problem-info');
+  var solutionsListDiv = document.getElementById('solutions-list');
+  var solvedProblems = getSolvedProblems();
 
-  if (problem) {
-    editor.setValue(problem.solutions[0]);
+  if (!problem) {
+    editor.setValue('/* Select Problem */');
+    problemInfoDiv.innerHTML = '';
+    return;
+  }
+  // Show both traditional and arrow function setup
+  editor.setValue(functionSuggestionsComment(problem));
+  problemInfoDiv.innerHTML = displayProblemInfo(problem);
+
+  var userSolution = solvedProblems[problem.functionName];
+  if (userSolution) {
+    var solution = getCurrentSolution();
+    solutionsListDiv.innerHTML = displaySolutions([userSolution].concat(problem.solutions), solution);
+    editor.setValue(solution);
+  } else {
+    solutionsListDiv.innerHTML = '';
   }
 };
 
 module.exports = { setupEditor: setupEditor, displayProblem: displayProblem };
 
 /*------------  PRIVATE  ------------*/
+
+var displaySolutions = function displaySolutions(solutions, activeSolution) {
+  return '\n  <ul>\n    ' + solutions.reduce(function (html, solution, index) {
+    return '\n      ' + html + '\n      <li class="' + (solution === activeSolution ? 'active' : '') + '">\n        <a href="/?solution=' + (index - 1 /* 0 is user solution */) + '">\n          ' + (index === 0 ? 'My Solution' : 'Solution ' + String(index - 1)) + '   \n        </a>\n      </li>\n    ';
+  }, '') + '\n  </ul>\n';
+};
+
+var functionSuggestionsComment = function functionSuggestionsComment(problem) {
+  return '/*\n  ' + getProblemSignature(problem, false) + ' { }\n  ' + getProblemSignature(problem, true) + ' => { }\n*/';
+};
 
 var setTabs = function setTabs(cm) {
   if (cm.somethingSelected()) {
@@ -10177,7 +10209,11 @@ var setTabs = function setTabs(cm) {
   }
 };
 
-},{"codemirror":1,"codemirror/mode/javascript/javascript":2}],4:[function(require,module,exports){
+var displayProblemInfo = function displayProblemInfo(problem) {
+  return '\n  <h4>' + problem.title + '</h4>\n  <p>' + problem.description + '</p>\n';
+};
+
+},{"./problems":5,"./solved":7,"codemirror":1,"codemirror/mode/javascript/javascript":2}],4:[function(require,module,exports){
 'use strict';
 
 /* global PROBLEMS */
@@ -10195,8 +10231,10 @@ var renderNavList = function renderNavList(currentProblem) {
 };
 
 var addListenersToNavbar = function addListenersToNavbar() {
+  var solutionsList = document.getElementById('solutions-list');
   var nav = document.getElementsByTagName('nav')[0];
   nav.addEventListener('click', updateSearch);
+  solutionsList.addEventListener('click', updateSearch);
   var main = document.getElementById('main');
   nav.getElementsByTagName('button')[0].addEventListener('click', function (e) {
     return toggle(e, nav, main);
@@ -10236,8 +10274,17 @@ var updateSearch = function updateSearch(event) {
 
   var problem = destParams.get('problem');
   var group = destParams.get('group');
-  params.set('problem', problem);
-  params.set('group', group);
+  var solution = destParams.get('solution');
+  if (problem) {
+    params.set('problem', problem);
+  }
+  if (group) {
+    params.set('group', group);
+  }
+  if (solution) {
+    params.set('solution', solution);
+  }
+
   window.history.pushState({ problem: problem, group: group }, problem, '/?' + params);
 };
 
@@ -10250,6 +10297,9 @@ var toggle = function toggle(event, nav, main) {
 'use strict';
 
 /* global PROBLEMS */
+
+var _require = require('./solved'),
+    getSolvedProblems = _require.getSolvedProblems;
 
 var getCurrentProblem = function getCurrentProblem() {
   var url = new URL(window.location);
@@ -10264,11 +10314,33 @@ var getCurrentProblem = function getCurrentProblem() {
   }) || null : null;
 };
 
+var getCurrentSolution = function getCurrentSolution() {
+  var problem = getCurrentProblem();
+  if (!problem) {
+    return null;
+  }
+
+  var url = new URL(window.location);
+  var params = new URLSearchParams(url.search.slice(1));
+  var solution = parseInt(params.get('solution'));
+
+  if (solution === -1) {
+    var solved = getSolvedProblems();
+    return solved[problem.functionName];
+  }
+
+  return problem.solutions[solution] || null;
+};
+
 var onProblemChange = function onProblemChange(callback) {
   return problemChangedCallbacks.push(callback);
 };
 
-module.exports = { onProblemChange: onProblemChange, getCurrentProblem: getCurrentProblem };
+var getProblemSignature = function getProblemSignature(problem, arrow) {
+  return arrow ? 'const ' + problem.functionName + ' = (' + problem.parameters.join(', ') + ')' : 'function ' + problem.functionName + ' (' + problem.parameters.join(', ') + ')';
+};
+
+module.exports = { onProblemChange: onProblemChange, getCurrentProblem: getCurrentProblem, getProblemSignature: getProblemSignature, getCurrentSolution: getCurrentSolution };
 
 /*------------  PRIVATE  ------------*/
 
@@ -10295,7 +10367,7 @@ window.history.onpushstate = onParamsChange;
   };
 })(window.history);
 
-},{}],6:[function(require,module,exports){
+},{"./solved":7}],6:[function(require,module,exports){
 'use strict';
 
 var renderResults = function renderResults(results, tableBody) {
@@ -10337,13 +10409,17 @@ var getSolvedProblems = function getSolvedProblems() {
   return JSON.parse(problems);
 };
 
-var setProblemToSolved = function setProblemToSolved(problem) {
+var setProblemToSolved = function setProblemToSolved(problem, code) {
   var problems = getSolvedProblems();
-  problems[problem] = true;
+  problems[problem] = code;
   window.localStorage.setItem(SOLVED_PROBLEMS, JSON.stringify(problems));
 };
 
-module.exports = { setProblemToSolved: setProblemToSolved, getSolvedProblems: getSolvedProblems };
+var resetSolved = function resetSolved() {
+  window.localStorage.setItem(SOLVED_PROBLEMS, JSON.stringify({}));
+};
+
+module.exports = { setProblemToSolved: setProblemToSolved, getSolvedProblems: getSolvedProblems, resetSolved: resetSolved };
 
 var SOLVED_PROBLEMS = 'SOLVED_PROBLEMS';
 
@@ -10469,14 +10545,15 @@ var main = function main() {
 
   var onRun = function onRun(event) {
     var problem = getCurrentProblem();
+    var code = editor.getValue();
 
-    var _run = run(editor.getValue(), problem),
+    var _run = run(code, problem),
         results = _run.results,
         passed = _run.passed,
         error = _run.error;
 
     if (passed) {
-      setProblemToSolved(problem.functionName);
+      setProblemToSolved(problem.functionName, code);
     }
     if (error) {
       renderErrorMessage(error, messageDiv, tableBody);

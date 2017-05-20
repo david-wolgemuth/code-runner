@@ -8,12 +8,16 @@ const getSolvedProblems = () => {
   return JSON.parse(problems);
 };
 
-const setProblemToSolved = (problem) => {
+const setProblemToSolved = (problem, code) => {
   const problems = getSolvedProblems();
-  problems[problem] = true;
+  problems[problem] = code;
   window.localStorage.setItem(SOLVED_PROBLEMS, JSON.stringify(problems));
 };
 
-module.exports = { setProblemToSolved, getSolvedProblems };
+const resetSolved = () => {
+  window.localStorage.setItem(SOLVED_PROBLEMS, JSON.stringify({}));
+}
+
+module.exports = { setProblemToSolved, getSolvedProblems, resetSolved };
 
 const SOLVED_PROBLEMS = 'SOLVED_PROBLEMS';
