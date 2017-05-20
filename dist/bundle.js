@@ -10171,7 +10171,44 @@ const displayProblem = (problem, editor) => {
 module.exports = { setupEditor, displayProblem };
 
 },{"codemirror":1,"codemirror/mode/javascript/javascript":2}],4:[function(require,module,exports){
+/* global PROBLEMS */
 
+const renderNavList = () => {
+  const list = document.querySelectorAll('nav > ol')[0];
+  const listHtml = PROBLEMS.reduce((html, group) => (html + renderProblemGroup(group)), '')
+  list.innerHTML = listHtml;
+};
+
+const addListenersToNavbar = () => {
+  const nav = document.getElementsByTagName('nav')[0];
+  nav.addEventListener('click', updateSearch);
+  const main = document.getElementById('main');
+  nav.getElementsByTagName('button')[0].addEventListener('click', e=>toggle(e, nav, main));
+};
+
+
+module.exports = { addListenersToNavbar, renderNavList };
+
+
+/*------------  PRIVATE  ------------*/
+
+
+const renderProblemGroup = (group) => `
+    <li>${group.group}
+      <ul>
+        ${group.problems.reduce((html, problem) => html + renderProblem(group.group, problem), '')}
+      </ul>
+    </li>
+`;
+
+const renderProblem = (group, problem) => `<li>
+  <i class="fa fa-circle success"></i>
+  <a
+    data-group="${group}"
+    data-problem="${problem.functionName}"
+    href="/?problem=${problem.functionName}&group=${group}"
+    >${problem.functionName}</a>
+</li>`;
 
 const updateSearch = (event) => {
   if (event.target.tagName !== 'A') {
@@ -10182,12 +10219,15 @@ const updateSearch = (event) => {
   let url = new URL(window.location);
   let params = new URLSearchParams(url.search.slice(1));
 
-  const problem = event.target.innerText;
+  let href = 'https://abc.com' + event.target.getAttribute('href');  // Create valid url from href
+  let destURL = new URL(href);
+  let destParams = new URLSearchParams(destURL.search.slice(1));
 
-  if (params.get('problem') !== problem) {
-    params.set('problem', problem);
-    window.history.pushState({ problem }, problem, `/?${params}`);
-  }
+  let problem = destParams.get('problem');
+  let group = destParams.get('group');
+  params.set('problem', problem);
+  params.set('group', group);
+  window.history.pushState({ problem, group }, problem, `/?${params}`);
 };
 
 const toggle = (event, nav, main) => {
@@ -10195,45 +10235,38 @@ const toggle = (event, nav, main) => {
   main.classList.toggle('nav-open');
 };
 
-const addListenersToNavbar = () => {
-  const nav = document.getElementsByTagName('nav')[0];
-  nav.addEventListener('click', updateSearch);
-  const main = document.getElementById('main');
-  nav.getElementsByTagName('button')[0].addEventListener('click', e=>toggle(e, nav, main));
-};
-
-module.exports = { addListenersToNavbar };
-
 },{}],5:[function(require,module,exports){
 
 /* global PROBLEMS */
 
-const deepFreeze = (obj) => {
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
-  // Retrieve the property names defined on obj
-  var propNames = Object.getOwnPropertyNames(obj);
-
-  // Freeze properties before freezing self
-  propNames.forEach(function(name) {
-    var prop = obj[name];
-
-    // Freeze prop if it is an object
-    if (typeof prop == 'object' && prop !== null)
-      deepFreeze(prop);
-  });
-
-  // Freeze self (no-op if already frozen)
-  return Object.freeze(obj);
-};
-
-deepFreeze(PROBLEMS);
-
 const getCurrentProblem = () => {
   const url = new URL(window.location);
   const params = new URLSearchParams(url.search.slice(1));
-  const functionName = params.get('problem');
-  return PROBLEMS.find(problem => problem.functionName === functionName) || null;
+  const groupName = params.get('group');
+  const problemName = params.get('problem');
+  const group = PROBLEMS.find(group => group.group === groupName) || null;
+  return group
+    ? (group.problems.find(problem => problem.functionName === problemName) || null) 
+    : null;
 };
+
+const onProblemChange = (callback) => problemChangedCallbacks.push(callback);
+
+
+module.exports = { onProblemChange, getCurrentProblem };
+
+
+/*------------  PRIVATE  ------------*/
+
+
+const problemChangedCallbacks = [];
+const onParamsChange = () => {
+  const problem = getCurrentProblem();
+  problemChangedCallbacks.forEach(callback => callback(problem));
+};
+
+window.onpopstate = onParamsChange;
+window.history.onpushstate = onParamsChange;
 
 (function createOnPushStateHandler (history){
     // http://stackoverflow.com/questions/4570093/how-to-get-notified-about-changes-of-the-history-via-history-pushstate
@@ -10246,20 +10279,6 @@ const getCurrentProblem = () => {
       return x;
     };
 })(window.history);
-
-const problemChangedCallbacks = [];
-const onParamsChange = () => {
-  const problem = getCurrentProblem();
-  problemChangedCallbacks.forEach(callback => callback(problem));
-};
-
-window.onpopstate = onParamsChange;
-window.history.onpushstate = onParamsChange;
-
-const onProblemChange = (callback) => problemChangedCallbacks.push(callback);
-
-module.exports = { onProblemChange, getCurrentProblem };
-
 
 },{}],6:[function(require,module,exports){
 
@@ -10300,61 +10319,29 @@ module.exports = { renderResults, renderPassFail, renderErrorMessage };
 
 },{}],7:[function(require,module,exports){
 
-const slog = (args) => {
-  console.log(args);
-  return '';
-}
-const argsToArrayString = (args) => {
-  const array = [];
-  for (let key in args) {
-    if (key == +key) {  // is index
-      array[key] = args[key];
-    }
+const run = (code, problem) => {
+  const results = [];
+  try {
+    const passed = runTest(code, problem)(
+      (message) => {
+        results.push({ message: JSON.parse(message), success: true });
+    }, (message) => {
+        results.push({ message: JSON.parse(message), success: false });
+    });
+    return { results, passed };
+  } catch (error) {
+    return { error };
   }
-  return JSON.stringify(array);
-};
-const prettyArgsString = (args) => {
-  const array = [];
-  for (let key in args) {
-    if (key == +key) {  // is index
-      array[key] = JSON.stringify(args[key]).replace(/\"/g, "\\\"");
-    }
-  }
-  return array.join(', ');
-}
-
-const assert = (x, y, functionName, input) => {
-  const message = `
-    {
-      "call": "${functionName}(${
-        prettyArgsString(input)
-      })",
-      "expected": "${x.toString().replace(/\"/g, "\\\"")}",
-      "actual": "${y.toString().replace(/\"/g, "\\\"")}"
-    }
-  `;
-
-  if (x === y) { return message; }
-  throw new Error(message);
 };
 
-const buildTest = (problem) => (
-  problem.tests.reduce((str, test) => (
-    str + `(function () {
-      "use strict;"
-      let successMessage = assert(
-        ${problem.functionName}.apply(null, ${argsToArrayString(test)}),
-        ${test.return},
-        '${problem.functionName}',
-        ${argsToArrayString(test)},
-      );
 
-      success(successMessage);
-    })();
-  `), '')
-);
+module.exports = { run };
 
-const run = (code, problem) => (
+
+/*------------  PRIVATE  ------------*/
+
+
+const runTest = (code, problem) => (
   function (success, failure) {
     "use strict";
     const func = new Function('success', 'assert', `
@@ -10372,42 +10359,74 @@ const run = (code, problem) => (
   }
 );
 
-module.exports = { run };
+const buildTest = (problem) => (
+  problem.tests.reduce((str, test) => (
+    str + `(function () {
+      "use strict;"
+      let successMessage = assert(
+        ${test.return},
+        ${problem.functionName}.apply(null, ${argsToArrayString(test)}),
+        '${problem.functionName}',
+        ${argsToArrayString(test)},
+      );
+
+      success(successMessage);
+    })();
+  `), '')
+);
+
+const assert = (x, y, functionName, input) => {
+  const message = `
+    {
+      "call": "${functionName}(${
+        prettyArgsString(input)
+      })",
+      "expected": "${x.toString().replace(/\"/g, "\\\"")}",
+      "actual": "${y.toString().replace(/\"/g, "\\\"")}"
+    }
+  `;
+
+  if (x === y) { return message; }
+  throw new Error(message);
+};
+
+const argsToArrayString = (args) => {
+  const array = [];
+  for (let key in args) {
+    if (key == +key) {  // is index
+      array[key] = args[key];
+    }
+  }
+  return JSON.stringify(array);
+};
+
+const prettyArgsString = (args) => {
+  const array = [];
+  for (let key in args) {
+    if (key == +key) {  // is index
+      array[key] = JSON.stringify(args[key]).replace(/\"/g, "\\\"");
+    }
+  }
+  return array.join(', ');
+};
 
 },{}],8:[function(require,module,exports){
 
 const { setupEditor, displayProblem } = require('./editor');
 const { run } = require('./test-runner')
-const { addListenersToNavbar } = require('./navbar');
+const { addListenersToNavbar, renderNavList } = require('./navbar');
 const { getCurrentProblem, onProblemChange } = require('./problems');
 const { renderErrorMessage, renderPassFail, renderResults } = require('./results');
-
-const runTest = (event, editor) => {
-  const results = [];
-  try {
-    const passed = run(editor.getValue(), getCurrentProblem())(
-      (message) => {
-        results.push({ message: JSON.parse(message), success: true });
-    }, (message) => {
-        results.push({ message: JSON.parse(message), success: false });
-    });
-    return { results, passed };
-  } catch (error) {
-    return { error };
-  }
-};
 
 const main = () => {
   const area = document.getElementById('code-editor');
   const editor = setupEditor(area);
-
   const messageDiv = document.getElementById('message');
   const tableBody = document.getElementById('test-results').getElementsByTagName('tbody')[0];
-
   const runButton = document.getElementById('run');
 
-  const _runTest = (event) => {
-    const { results, passed, error } = runTest(event, editor);
+  const onRun = (event) => {
+    const { results, passed, error } = run(editor.getValue(), getCurrentProblem());
     if (error) {
       renderErrorMessage(error, messageDiv, tableBody);
     } else {
@@ -10418,17 +10437,21 @@ const main = () => {
 
   const runTestIfCTREnter = (event) => {
     if (event.key === 'Enter' && event.ctrlKey) {
-      _runTest(event);
+      onRun(event);
     }
   };
 
-  displayProblem(getCurrentProblem(), editor);
-  onProblemChange(problem => displayProblem(problem, editor));
+  const updateProblem = (problem) => {
+    renderNavList();
+    addListenersToNavbar();
+    displayProblem(problem, editor);
+  };
+
+  onProblemChange(updateProblem);
+  updateProblem(getCurrentProblem());
 
   document.addEventListener('keyup', runTestIfCTREnter);
-  runButton.addEventListener('click', _runTest);
-
-  addListenersToNavbar();
+  runButton.addEventListener('click', onRun);
 };
 
 document.addEventListener('DOMContentLoaded', main);

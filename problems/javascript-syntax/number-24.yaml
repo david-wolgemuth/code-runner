@@ -1,0 +1,7 @@
+title: Number 24
+description: Write a function named `number24` which always returns 24
+functionName: number24
+parameters: []
+tests:
+  - return: 24
+  

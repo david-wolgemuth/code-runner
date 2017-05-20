@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently --kill-others \"npm run watchify\" \"npm run serve\"",
     "watchify": "./node_modules/watchify/bin/cmd.js src -o dist/bundle.js",
-    "serve": "./node_modules/http-server/bin/http-server -p 3000 -o -c-1"
+    "serve": "./node_modules/http-server/bin/http-server -p 3000 -o -c-1",
+    "bundle": "node bundle-problems && ./node_modules/browserify/bin/cmd.js src -o dist/bundle.js"
   },
   "keywords": [],
   "author": "David Wolgemuth <davidjwolgemuth@wgmail.com> (https://david-wolgemuth.github.io)",
@@ -14,7 +15,8 @@
   "devDependencies": {
     "concurrently": "^3.4.0",
     "http-server": "^0.10.0",
-    "watchify": "^3.9.0"
+    "watchify": "^3.9.0",
+    "yaml-js": "^0.1.5"
   },
   "dependencies": {
     "codemirror": "^5.25.2"

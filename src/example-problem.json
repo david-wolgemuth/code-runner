@@ -1,8 +1,8 @@
 {
-  "title": "Sum of Numbers",
-  "description": "Return the sum of all numbers in an array",
-  "functionName": "sum",
-  "parameters": ["numberArray"],
+  "title": "sum of numbers",
+  "description": "return the sum of all numbers in an array",
+  "functionname": "sum",
+  "parameters": ["numberarray"],
   "tests":[
     {
       "0": [2, 4, 6],

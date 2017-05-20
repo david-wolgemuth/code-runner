@@ -1,36 +1,19 @@
 
 const { setupEditor, displayProblem } = require('./editor');
 const { run } = require('./test-runner')
-const { addListenersToNavbar } = require('./navbar');
+const { addListenersToNavbar, renderNavList } = require('./navbar');
 const { getCurrentProblem, onProblemChange } = require('./problems');
 const { renderErrorMessage, renderPassFail, renderResults } = require('./results');
-
-const runTest = (event, editor) => {
-  const results = [];
-  try {
-    const passed = run(editor.getValue(), getCurrentProblem())(
-      (message) => {
-        results.push({ message: JSON.parse(message), success: true });
-    }, (message) => {
-        results.push({ message: JSON.parse(message), success: false });
-    });
-    return { results, passed };
-  } catch (error) {
-    return { error };
-  }
-};
 
 const main = () => {
   const area = document.getElementById('code-editor');
   const editor = setupEditor(area);
-
   const messageDiv = document.getElementById('message');
   const tableBody = document.getElementById('test-results').getElementsByTagName('tbody')[0];
-
   const runButton = document.getElementById('run');
 
-  const _runTest = (event) => {
-    const { results, passed, error } = runTest(event, editor);
+  const onRun = (event) => {
+    const { results, passed, error } = run(editor.getValue(), getCurrentProblem());
     if (error) {
       renderErrorMessage(error, messageDiv, tableBody);
     } else {
@@ -41,17 +24,21 @@ const main = () => {
 
   const runTestIfCTREnter = (event) => {
     if (event.key === 'Enter' && event.ctrlKey) {
-      _runTest(event);
+      onRun(event);
     }
   };
 
-  displayProblem(getCurrentProblem(), editor);
-  onProblemChange(problem => displayProblem(problem, editor));
+  const updateProblem = (problem) => {
+    renderNavList();
+    addListenersToNavbar();
+    displayProblem(problem, editor);
+  };
+
+  onProblemChange(updateProblem);
+  updateProblem(getCurrentProblem());
 
   document.addEventListener('keyup', runTestIfCTREnter);
-  runButton.addEventListener('click', _runTest);
-
-  addListenersToNavbar();
+  runButton.addEventListener('click', onRun);
 };
 
 document.addEventListener('DOMContentLoaded', main);
