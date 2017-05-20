@@ -10140,163 +10140,160 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
 });
 
 },{"../../lib/codemirror":1}],3:[function(require,module,exports){
+'use strict';
 
-const CodeMirror = require('codemirror');
+var CodeMirror = require('codemirror');
 require('codemirror/mode/javascript/javascript');
 
-const setTabs = (cm) => {
-  if (cm.somethingSelected()) {
-    cm.indentSelection("add");
-  } else {
-    cm.replaceSelection(cm.getOption("indentWithTabs")? "\t":
-      Array(cm.getOption("indentUnit") + 1).join(" "), "end", "+input");
-  }
-};
-
-const setupEditor = (area) => (
-  CodeMirror(area, {
-    value: 'const sum = (arr) => (\n  arr.reduce((s, x) => s + x)\n);\n',
-    mode:  'javascript',
+var setupEditor = function setupEditor(area) {
+  return CodeMirror(area, {
+    value: '/* Select a problem */',
+    mode: 'javascript',
     tabSize: 2,
     extraKeys: { Tab: setTabs },
     indentWithTabs: false,
     lineNumbers: true
-  })
-);
-
-const displayProblem = (problem, editor) => {
-  editor.setValue(problem.solutions[0]);
+  });
 };
 
-module.exports = { setupEditor, displayProblem };
-
-},{"codemirror":1,"codemirror/mode/javascript/javascript":2}],4:[function(require,module,exports){
-/* global PROBLEMS */
-
-const renderNavList = () => {
-  const list = document.querySelectorAll('nav > ol')[0];
-  const listHtml = PROBLEMS.reduce((html, group) => (html + renderProblemGroup(group)), '')
-  list.innerHTML = listHtml;
+var displayProblem = function displayProblem(problem, editor) {
+  if (problem) {
+    editor.setValue(problem.solutions[0]);
+  }
 };
 
-const addListenersToNavbar = () => {
-  const nav = document.getElementsByTagName('nav')[0];
-  nav.addEventListener('click', updateSearch);
-  const main = document.getElementById('main');
-  nav.getElementsByTagName('button')[0].addEventListener('click', e=>toggle(e, nav, main));
-};
-
-
-module.exports = { addListenersToNavbar, renderNavList };
-
+module.exports = { setupEditor: setupEditor, displayProblem: displayProblem };
 
 /*------------  PRIVATE  ------------*/
 
+var setTabs = function setTabs(cm) {
+  if (cm.somethingSelected()) {
+    cm.indentSelection("add");
+  } else {
+    cm.replaceSelection(cm.getOption("indentWithTabs") ? "\t" : Array(cm.getOption("indentUnit") + 1).join(" "), "end", "+input");
+  }
+};
 
-const renderProblemGroup = (group) => `
-    <li>${group.group}
-      <ul>
-        ${group.problems.reduce((html, problem) => html + renderProblem(group.group, problem), '')}
-      </ul>
-    </li>
-`;
+},{"codemirror":1,"codemirror/mode/javascript/javascript":2}],4:[function(require,module,exports){
+'use strict';
 
-const renderProblem = (group, problem) => `<li>
-  <i class="fa fa-circle success"></i>
-  <a
-    data-group="${group}"
-    data-problem="${problem.functionName}"
-    href="/?problem=${problem.functionName}&group=${group}"
-    >${problem.functionName}</a>
-</li>`;
+/* global PROBLEMS */
 
-const updateSearch = (event) => {
+var renderNavList = function renderNavList(currentProblem) {
+  var list = document.querySelectorAll('nav > ol')[0];
+  var listHtml = PROBLEMS.reduce(function (html, group) {
+    return html + renderProblemGroup(group, currentProblem);
+  }, '');
+  list.innerHTML = listHtml;
+};
+
+var addListenersToNavbar = function addListenersToNavbar() {
+  var nav = document.getElementsByTagName('nav')[0];
+  nav.addEventListener('click', updateSearch);
+  var main = document.getElementById('main');
+  nav.getElementsByTagName('button')[0].addEventListener('click', function (e) {
+    return toggle(e, nav, main);
+  });
+};
+
+module.exports = { addListenersToNavbar: addListenersToNavbar, renderNavList: renderNavList };
+
+/*------------  PRIVATE  ------------*/
+
+var renderProblemGroup = function renderProblemGroup(group, currentProblem) {
+  return '\n    <li>' + group.group + '\n      <ul>\n        ' + group.problems.reduce(function (html, problem) {
+    return html + renderProblem(group.group, problem, currentProblem);
+  }, '') + '\n      </ul>\n    </li>\n';
+};
+
+var renderProblem = function renderProblem(group, problem, currentProblem) {
+  return '<li class="' + (currentProblem && currentProblem.functionName === problem.functionName ? 'active' : '') + '">\n  <i class="fa fa-circle success"></i>\n  <a href="/?problem=' + problem.functionName + '&group=' + group + '">' + problem.functionName + '</a>\n</li>';
+};
+
+var updateSearch = function updateSearch(event) {
   if (event.target.tagName !== 'A') {
     return;
   }
   event.preventDefault();
 
-  let url = new URL(window.location);
-  let params = new URLSearchParams(url.search.slice(1));
+  var url = new URL(window.location);
+  var params = new URLSearchParams(url.search.slice(1));
 
-  let href = 'https://abc.com' + event.target.getAttribute('href');  // Create valid url from href
-  let destURL = new URL(href);
-  let destParams = new URLSearchParams(destURL.search.slice(1));
+  var href = 'https://abc.com' + event.target.getAttribute('href'); // Create valid url from href
+  var destURL = new URL(href);
+  var destParams = new URLSearchParams(destURL.search.slice(1));
 
-  let problem = destParams.get('problem');
-  let group = destParams.get('group');
+  var problem = destParams.get('problem');
+  var group = destParams.get('group');
   params.set('problem', problem);
   params.set('group', group);
-  window.history.pushState({ problem, group }, problem, `/?${params}`);
+  window.history.pushState({ problem: problem, group: group }, problem, '/?' + params);
 };
 
-const toggle = (event, nav, main) => {
+var toggle = function toggle(event, nav, main) {
   nav.classList.toggle('closed');
   main.classList.toggle('nav-open');
 };
 
 },{}],5:[function(require,module,exports){
+'use strict';
 
 /* global PROBLEMS */
 
-const getCurrentProblem = () => {
-  const url = new URL(window.location);
-  const params = new URLSearchParams(url.search.slice(1));
-  const groupName = params.get('group');
-  const problemName = params.get('problem');
-  const group = PROBLEMS.find(group => group.group === groupName) || null;
-  return group
-    ? (group.problems.find(problem => problem.functionName === problemName) || null) 
-    : null;
+var getCurrentProblem = function getCurrentProblem() {
+  var url = new URL(window.location);
+  var params = new URLSearchParams(url.search.slice(1));
+  var groupName = params.get('group');
+  var problemName = params.get('problem');
+  var group = PROBLEMS.find(function (group) {
+    return group.group === groupName;
+  }) || null;
+  return group ? group.problems.find(function (problem) {
+    return problem.functionName === problemName;
+  }) || null : null;
 };
 
-const onProblemChange = (callback) => problemChangedCallbacks.push(callback);
+var onProblemChange = function onProblemChange(callback) {
+  return problemChangedCallbacks.push(callback);
+};
 
-
-module.exports = { onProblemChange, getCurrentProblem };
-
+module.exports = { onProblemChange: onProblemChange, getCurrentProblem: getCurrentProblem };
 
 /*------------  PRIVATE  ------------*/
 
-
-const problemChangedCallbacks = [];
-const onParamsChange = () => {
-  const problem = getCurrentProblem();
-  problemChangedCallbacks.forEach(callback => callback(problem));
+var problemChangedCallbacks = [];
+var onParamsChange = function onParamsChange() {
+  var problem = getCurrentProblem();
+  problemChangedCallbacks.forEach(function (callback) {
+    return callback(problem);
+  });
 };
 
 window.onpopstate = onParamsChange;
 window.history.onpushstate = onParamsChange;
 
-(function createOnPushStateHandler (history){
-    // http://stackoverflow.com/questions/4570093/how-to-get-notified-about-changes-of-the-history-via-history-pushstate
-    var pushState = history.pushState;
-    history.pushState = function (state) {
-      let x = pushState.apply(history, arguments);
-      if (typeof history.onpushstate === "function") {
-        history.onpushstate({ state });
-      }
-      return x;
-    };
+(function createOnPushStateHandler(history) {
+  // http://stackoverflow.com/questions/4570093/how-to-get-notified-about-changes-of-the-history-via-history-pushstate
+  var pushState = history.pushState;
+  history.pushState = function (state) {
+    var x = pushState.apply(history, arguments);
+    if (typeof history.onpushstate === "function") {
+      history.onpushstate({ state: state });
+    }
+    return x;
+  };
 })(window.history);
 
 },{}],6:[function(require,module,exports){
+'use strict';
 
-const renderResults = (results, tableBody) => {
-  tableBody.innerHTML = results.reduce((html, result) => (html + `
-    <tr>
-      ${console.log(result)?'':''}
-      <td>${result.message.call}</td>
-      <td>${result.message.expected}</td>
-      <td>${result.message.actual}</td>
-      <td>
-        <i class="fa ${result.success ? 'fa-circle success' : 'fa-circle-o failure' }" aria-hidden="true"></i>
-      </td>
-    </tr>
-  `), '');
+var renderResults = function renderResults(results, tableBody) {
+  tableBody.innerHTML = results.reduce(function (html, result) {
+    return html + ('\n    <tr>\n      ' + (console.log(result) ? '' : '') + '\n      <td>' + result.message.call + '</td>\n      <td>' + result.message.expected + '</td>\n      <td>' + result.message.actual + '</td>\n      <td>\n        <i class="fa ' + (result.success ? 'fa-circle success' : 'fa-circle-o failure') + '" aria-hidden="true"></i>\n      </td>\n    </tr>\n  ');
+  }, '');
 };
 
-const renderPassFail = (passed, messageDiv) => {
+var renderPassFail = function renderPassFail(passed, messageDiv) {
   if (passed) {
     messageDiv.innerHTML = '<i class="fa fa-check"></i> Passed!';
     messageDiv.classList.add('success');
@@ -10308,47 +10305,41 @@ const renderPassFail = (passed, messageDiv) => {
   }
 };
 
-const renderErrorMessage = (error, messageDiv, tableBody) => {
+var renderErrorMessage = function renderErrorMessage(error, messageDiv, tableBody) {
   tableBody.innerHTML = '';
   messageDiv.innerText = error;
   messageDiv.classList.add('failure');
   messageDiv.classList.remove('success');
 };
 
-module.exports = { renderResults, renderPassFail, renderErrorMessage };
+module.exports = { renderResults: renderResults, renderPassFail: renderPassFail, renderErrorMessage: renderErrorMessage };
 
 },{}],7:[function(require,module,exports){
+'use strict';
 
-const run = (code, problem) => {
-  const results = [];
+var run = function run(code, problem) {
+  var results = [];
   try {
-    const passed = runTest(code, problem)(
-      (message) => {
-        results.push({ message: JSON.parse(message), success: true });
-    }, (message) => {
-        results.push({ message: JSON.parse(message), success: false });
+    var passed = runTest(code, problem)(function (message) {
+      results.push({ message: JSON.parse(message), success: true });
+    }, function (message) {
+      results.push({ message: JSON.parse(message), success: false });
     });
-    return { results, passed };
+    return { results: results, passed: passed };
   } catch (error) {
-    return { error };
+    return { error: error };
   }
 };
 
-
-module.exports = { run };
-
+module.exports = { run: run };
 
 /*------------  PRIVATE  ------------*/
 
-
-const runTest = (code, problem) => (
-  function (success, failure) {
+var runTest = function runTest(code, problem) {
+  return function (success, failure) {
     "use strict";
-    const func = new Function('success', 'assert', `
-      "use strict";
-      ${code}
-      ${buildTest(problem)}
-    `);
+
+    var func = new Function('success', 'assert', '\n      "use strict";\n      ' + code + '\n      ' + buildTest(problem) + '\n    ');
     try {
       func(success, assert);
     } catch (error) {
@@ -10356,54 +10347,40 @@ const runTest = (code, problem) => (
       return false;
     }
     return true;
+  };
+};
+
+var buildTest = function buildTest(problem) {
+  return problem.tests.reduce(function (str, test) {
+    return str + ('(function () {\n      "use strict;"\n      let successMessage = assert(\n        ' + test.return + ',\n        ' + problem.functionName + '.apply(null, ' + argsToArrayString(test) + '),\n        \'' + problem.functionName + '\',\n        ' + argsToArrayString(test) + ',\n      );\n\n      success(successMessage);\n    })();\n  ');
+  }, '');
+};
+
+var assert = function assert(x, y, functionName, input) {
+  var message = '\n    {\n      "call": "' + functionName + '(' + prettyArgsString(input) + ')",\n      "expected": "' + x.toString().replace(/\"/g, "\\\"") + '",\n      "actual": "' + y.toString().replace(/\"/g, "\\\"") + '"\n    }\n  ';
+
+  if (x === y) {
+    return message;
   }
-);
-
-const buildTest = (problem) => (
-  problem.tests.reduce((str, test) => (
-    str + `(function () {
-      "use strict;"
-      let successMessage = assert(
-        ${test.return},
-        ${problem.functionName}.apply(null, ${argsToArrayString(test)}),
-        '${problem.functionName}',
-        ${argsToArrayString(test)},
-      );
-
-      success(successMessage);
-    })();
-  `), '')
-);
-
-const assert = (x, y, functionName, input) => {
-  const message = `
-    {
-      "call": "${functionName}(${
-        prettyArgsString(input)
-      })",
-      "expected": "${x.toString().replace(/\"/g, "\\\"")}",
-      "actual": "${y.toString().replace(/\"/g, "\\\"")}"
-    }
-  `;
-
-  if (x === y) { return message; }
   throw new Error(message);
 };
 
-const argsToArrayString = (args) => {
-  const array = [];
-  for (let key in args) {
-    if (key == +key) {  // is index
+var argsToArrayString = function argsToArrayString(args) {
+  var array = [];
+  for (var key in args) {
+    if (key == +key) {
+      // is index
       array[key] = args[key];
     }
   }
   return JSON.stringify(array);
 };
 
-const prettyArgsString = (args) => {
-  const array = [];
-  for (let key in args) {
-    if (key == +key) {  // is index
+var prettyArgsString = function prettyArgsString(args) {
+  var array = [];
+  for (var key in args) {
+    if (key == +key) {
+      // is index
       array[key] = JSON.stringify(args[key]).replace(/\"/g, "\\\"");
     }
   }
@@ -10411,22 +10388,41 @@ const prettyArgsString = (args) => {
 };
 
 },{}],8:[function(require,module,exports){
+'use strict';
 
-const { setupEditor, displayProblem } = require('./editor');
-const { run } = require('./test-runner')
-const { addListenersToNavbar, renderNavList } = require('./navbar');
-const { getCurrentProblem, onProblemChange } = require('./problems');
-const { renderErrorMessage, renderPassFail, renderResults } = require('./results');
+var _require = require('./editor'),
+    setupEditor = _require.setupEditor,
+    displayProblem = _require.displayProblem;
 
-const main = () => {
-  const area = document.getElementById('code-editor');
-  const editor = setupEditor(area);
-  const messageDiv = document.getElementById('message');
-  const tableBody = document.getElementById('test-results').getElementsByTagName('tbody')[0];
-  const runButton = document.getElementById('run');
+var _require2 = require('./test-runner'),
+    run = _require2.run;
 
-  const onRun = (event) => {
-    const { results, passed, error } = run(editor.getValue(), getCurrentProblem());
+var _require3 = require('./navbar'),
+    addListenersToNavbar = _require3.addListenersToNavbar,
+    renderNavList = _require3.renderNavList;
+
+var _require4 = require('./problems'),
+    getCurrentProblem = _require4.getCurrentProblem,
+    onProblemChange = _require4.onProblemChange;
+
+var _require5 = require('./results'),
+    renderErrorMessage = _require5.renderErrorMessage,
+    renderPassFail = _require5.renderPassFail,
+    renderResults = _require5.renderResults;
+
+var main = function main() {
+  var area = document.getElementById('code-editor');
+  var editor = setupEditor(area);
+  var messageDiv = document.getElementById('message');
+  var tableBody = document.getElementById('test-results').getElementsByTagName('tbody')[0];
+  var runButton = document.getElementById('run');
+
+  var onRun = function onRun(event) {
+    var _run = run(editor.getValue(), getCurrentProblem()),
+        results = _run.results,
+        passed = _run.passed,
+        error = _run.error;
+
     if (error) {
       renderErrorMessage(error, messageDiv, tableBody);
     } else {
@@ -10435,14 +10431,14 @@ const main = () => {
     }
   };
 
-  const runTestIfCTREnter = (event) => {
+  var runTestIfCTREnter = function runTestIfCTREnter(event) {
     if (event.key === 'Enter' && event.ctrlKey) {
       onRun(event);
     }
   };
 
-  const updateProblem = (problem) => {
-    renderNavList();
+  var updateProblem = function updateProblem(problem) {
+    renderNavList(problem);
     addListenersToNavbar();
     displayProblem(problem, editor);
   };

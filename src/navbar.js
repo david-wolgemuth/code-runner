@@ -1,8 +1,8 @@
 /* global PROBLEMS */
 
-const renderNavList = () => {
+const renderNavList = (currentProblem) => {
   const list = document.querySelectorAll('nav > ol')[0];
-  const listHtml = PROBLEMS.reduce((html, group) => (html + renderProblemGroup(group)), '')
+  const listHtml = PROBLEMS.reduce((html, group) => (html + renderProblemGroup(group, currentProblem)), '')
   list.innerHTML = listHtml;
 };
 
@@ -20,21 +20,17 @@ module.exports = { addListenersToNavbar, renderNavList };
 /*------------  PRIVATE  ------------*/
 
 
-const renderProblemGroup = (group) => `
+const renderProblemGroup = (group, currentProblem) => `
     <li>${group.group}
       <ul>
-        ${group.problems.reduce((html, problem) => html + renderProblem(group.group, problem), '')}
+        ${group.problems.reduce((html, problem) => html + renderProblem(group.group, problem, currentProblem), '')}
       </ul>
     </li>
 `;
 
-const renderProblem = (group, problem) => `<li>
+const renderProblem = (group, problem, currentProblem) => `<li class="${(currentProblem && currentProblem.functionName === problem.functionName) ? 'active' : ''}">
   <i class="fa fa-circle success"></i>
-  <a
-    data-group="${group}"
-    data-problem="${problem.functionName}"
-    href="/?problem=${problem.functionName}&group=${group}"
-    >${problem.functionName}</a>
+  <a href="/?problem=${problem.functionName}&group=${group}">${problem.functionName}</a>
 </li>`;
 
 const updateSearch = (event) => {

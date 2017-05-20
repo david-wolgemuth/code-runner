@@ -5,16 +5,19 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently --kill-others \"npm run watchify\" \"npm run serve\"",
-    "watchify": "./node_modules/watchify/bin/cmd.js src -o dist/bundle.js",
-    "serve": "./node_modules/http-server/bin/http-server -p 3000 -o -c-1",
-    "bundle": "node bundle-problems && ./node_modules/browserify/bin/cmd.js src -o dist/bundle.js"
+    "watchify": "./node_modules/watchify/bin/cmd.js src -t [ babelify --presets [ es2015 ] ] -o dist/bundle.js",
+    "serve": "./node_modules/http-server/bin/http-server -p 3000 -c-1",
+    "bundle": "node bundle-problems && ./node_modules/browserify/bin/cmd.js src -t [ babelify --presets [ es2015 ] ] | ./node_modules/uglify-js/bin/uglifyjs -o dist/bundle.min.js"
   },
   "keywords": [],
   "author": "David Wolgemuth <davidjwolgemuth@wgmail.com> (https://david-wolgemuth.github.io)",
   "license": "ISC",
   "devDependencies": {
+    "babel-preset-es2015": "^6.24.1",
+    "babelify": "^7.3.0",
     "concurrently": "^3.4.0",
     "http-server": "^0.10.0",
+    "uglify-js": "^3.0.10",
     "watchify": "^3.9.0",
     "yaml-js": "^0.1.5"
   },

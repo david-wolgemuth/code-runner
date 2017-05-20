@@ -29,7 +29,7 @@ const main = () => {
   };
 
   const updateProblem = (problem) => {
-    renderNavList();
+    renderNavList(problem);
     addListenersToNavbar();
     displayProblem(problem, editor);
   };
