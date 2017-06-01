@@ -85,7 +85,7 @@ const updateSearch = (event) => {
     params.set('solution', solution);
   }
 
-  window.history.pushState({ problem, group }, problem, `/?${params}`);
+  window.history.pushState({ problem, group }, problem, `?${params}`);
 };
 
 const toggle = (event, nav, main) => {

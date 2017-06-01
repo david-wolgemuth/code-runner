@@ -10285,7 +10285,7 @@ var updateSearch = function updateSearch(event) {
     params.set('solution', solution);
   }
 
-  window.history.pushState({ problem: problem, group: group }, problem, '/?' + params);
+  window.history.pushState({ problem: problem, group: group }, problem, '?' + params);
 };
 
 var toggle = function toggle(event, nav, main) {
