@@ -16,7 +16,7 @@ const setProblemToSolved = (problem, code) => {
 
 const resetSolved = () => {
   window.localStorage.setItem(SOLVED_PROBLEMS, JSON.stringify({}));
-}
+};
 
 module.exports = { setProblemToSolved, getSolvedProblems, resetSolved };
 
